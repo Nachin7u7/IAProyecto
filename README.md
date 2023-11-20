@@ -8,6 +8,6 @@ archivos necesarios de la propia libreria de YOLO version 3 o 4, donde se agrega
 
 para descargar yolov3.weights se puede encontrar en el repositorio oficial de yolo (pesa un poco mas de 200 Mb)
 
-[Descarga de yolov3.weights]([URL_del_enlace](https://github.com/patrick013/Object-Detection---Yolov3/blob/master/model/yolov3.weights)https://github.com/patrick013/Object-Detection---Yolov3/blob/master/model/yolov3.weights)
+[Descarga de yolov3.weights]([(https://github.com/patrick013/Object-Detection---Yolov3/blob/master/model/yolov3.weights)https://github.com/patrick013/Object-Detection---Yolov3/blob/master/model/yolov3.weights])
 
 y colocar el archivo en la carpeta raiz, acto seguido ejecutar el programa
