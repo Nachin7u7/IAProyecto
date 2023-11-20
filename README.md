@@ -11,3 +11,8 @@ para descargar yolov3.weights se puede encontrar en el repositorio oficial de yo
 Descarga de yolov3.weights ---> https://github.com/patrick013/Object-Detection---Yolov3/blob/master/model/yolov3.weights
 
 y colocar el archivo en la carpeta raiz, acto seguido ejecutar el programa
+
+
+## Estudiantes:
+### Ricardo I. Valencia
+### Alejandra Garcia
