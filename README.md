@@ -1,4 +1,4 @@
-# IAProyecto - VISA INSPECTOR
+# IAProyecto - HOUSE INSPECTOR
 
 Verificador de seguridad hogareña donde se reciben imagenes tomadas de una camara de seguridad del hogar y te pregunta si eres tu el que esta rondando dentro de la casa, caso contrario te dira que no hay nada de que preocuparse.
 
