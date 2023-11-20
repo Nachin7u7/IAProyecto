@@ -1,3 +1,8 @@
+import uvicorn
+import time
+from fastapi.responses import FileResponse
+from datetime import datetime
+import csv
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import HTMLResponse
 import cv2
@@ -13,7 +18,6 @@ with open("coco.names", "r") as f:
     classes = [line.strip() for line in f.readlines()]
 
 layer_names = net.getLayerNames()
-#output_layers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayersNames()]
 output_layers = [layer_names[i - 1] for i in net.getUnconnectedOutLayers()]
 
 
@@ -50,32 +54,75 @@ def detect_objects(image):
     return class_ids, confidences, boxes
 
 
-def is_wearing_glasses(class_ids, classes):
-    for class_id in class_ids:
-        if classes[class_id] == 'glasses':
-            return True
-    return False
-
-
-def is_wearing_cap(class_ids, classes):
-    for class_id in class_ids:
-        if classes[class_id] == 'cap':
-            return True
-    return False
-
-
-@app.post("/detect_objects/")
+@app.post("/predict/")
 async def detect_objects_endpoint(file: UploadFile = File(...)):
     contents = await file.read()
     image = cv2.imdecode(np.frombuffer(contents, np.uint8), -1)
 
+    start_time = time.time()  # Registrar el tiempo de inicio de la predicción
+
     class_ids, confidences, boxes = detect_objects(image)
 
-    if is_wearing_glasses(class_ids, classes) and is_wearing_cap(class_ids, classes):
-        return {"result": "Person is wearing glasses and a cap."}
-    elif is_wearing_glasses(class_ids, classes):
-        return {"result": "Person is wearing glasses."}
-    elif is_wearing_cap(class_ids, classes):
-        return {"result": "Person is wearing a cap."}
+    end_time = time.time()  # Registrar el tiempo de finalización de la predicción
+    execution_time = end_time - start_time  # Calcular el tiempo de ejecución
+
+    # Almacenar información de la predicción para el reporte
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    report_info = [file.filename, f"{image.shape[1]}x{image.shape[0]}",
+                   class_ids, timestamp, execution_time, "YOLOv3"]
+    prediction_reports.append(report_info)
+
+    # Resto del código permanece igual
+    if 0 in class_ids:
+        return {"result": "There is an entity at home, is that you?", "execution_time": execution_time}
     else:
-        return {"result": "Person is not wearing glasses or a cap."}
+        return {"result": "All clear, nothing to worry by now.", "execution_time": execution_time}
+
+
+@app.get("/status")
+async def get_status():
+    # Información del servicio
+    service_info = {"status": "running",
+                    "message": "Service is up and running."}
+
+    # Información del modelo
+    model_info = {
+        "model_name": "YOLOv3",
+        "weights_file": "yolov3.weights",
+        "config_file": "yolov3.cfg",
+        "classes_file": "coco.names",
+    }
+
+    return {"service_info": service_info, "model_info": model_info}
+
+
+# Lista para almacenar información de las predicciones para el reporte
+prediction_reports = []
+
+
+@app.get("/reports")
+async def get_reports():
+    # Crear un nombre de archivo único basado en la fecha y hora actual
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    file_name = f"prediction_report_{timestamp}.csv"
+
+    # Crear y escribir el archivo CSV con la información de las predicciones
+    with open(file_name, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        # Escribir encabezados
+        writer.writerow(["file_name", "image_size", "prediction",
+                        "timestamp", "execution_time", "model_name"])
+
+        # Escribir información de cada predicción en el archivo CSV
+        for report in prediction_reports:
+            writer.writerow(report)
+
+    return FileResponse(file_name, filename="prediction_report.csv")
+
+
+def run_app():
+    uvicorn.run(app, host="127.0.0.1", port=8000)
+
+
+if __name__ == "__main__":
+    run_app()

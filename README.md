@@ -1,6 +1,18 @@
 # IAProyecto - VISA INSPECTOR
 
-Verificador de imagenes correctamente tomadas y enfocadas (que tengan tamaño correcto, que no se este usando lentes, no usar gorra, verificacion de posicion) 
+Verificador de seguridad hogareña donde se reciben imagenes tomadas de una camara de seguridad del hogar y te pregunta si eres tu el que esta rondando dentro de la casa, caso contrario te dira que no hay nada de que preocuparse.
+
+#### Que se uso
+
+Se utilizo Yolov3 (Reconocimiento de personas), FastAPI, Uvicorn
+
+### Contenido (endpoints)
+
+**GET/status:** muestra datos del servidor, si es que esta corriendo y que archivos se esta usando para el motor de reconocimiento.  
+**POST/predict:** se sube la imagen y da el resultado sobre si se encuentra alguien dentro de la casa o no y registra el tiempo, informacion de la imagen, etc.  
+**GET/reports:** nos da la positibiladad de descargar un archivo CSV con todas las capturas que se hizo, con la informacion como la hora, tamaño, etc.
+
+### Como ejecutar el programa
 
 correr la app en localhost/docs y subir la imagen
 
