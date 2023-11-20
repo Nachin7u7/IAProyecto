@@ -24,7 +24,69 @@ Descarga de yolov3.weights ---> https://github.com/patrick013/Object-Detection--
 
 y colocar el archivo en la carpeta raiz, acto seguido ejecutar el programa
 
+#### Respuestas
+##### `POST /predict/`
+- **200 OK**
+  - Descripción: La predicción fue exitosa.
+  - Ejemplo:
+    ```json
+    {
+      "result": "All clear, nothing to worry by now.",
+      "execution_time": 0.123
+    }
+    ```
+
+- **200 OK**
+  - Descripción: Se detectó la presencia de un objeto (clase 0, que representa a personas en el conjunto de datos COCO).
+  - Ejemplo:
+    ```json
+    {
+      "result": "There is an entity at home, is that you?",
+      "execution_time": 0.456
+    }
+    ```
+
+#### Ejemplo de Uso (cURL)
+```bash
+curl -X POST "http://127.0.0.1:8000/predict/" -H "accept: application/json" -H "Content-Type: multipart/form-data" -F "file=@/path/to/your/image.jpg"
+```
+
+##### `GET /status`
+
+200 OK
+Descripción: Información sobre el estado del servicio y del modelo.  
+Ejemplo:
+
+```json
+{
+  "service_info": {
+    "status": "running",
+    "message": "Service is up and running."
+  },
+  "model_info": {
+    "model_name": "YOLOv3",
+    "weights_file": "yolov3.weights",
+    "config_file": "yolov3.cfg",
+    "classes_file": "coco.names"
+  }
+}
+```
+#### Ejemplo de Uso (cURL)
+```bash
+curl -X GET "http://127.0.0.1:8000/status" -H "accept: application/json"
+```
+
+##### `GET /reports`
+
+200 OK  
+Descripción: Archivo CSV con información sobre las predicciones.  
+Ejemplo: _Descarga del archivo prediction_report.csv._
+
+#### Ejemplo de Uso (cURL)
+```bash
+curl -X GET "http://127.0.0.1:8000/reports" -H "accept: application/csv"
+```
 
 ## Estudiantes:
-### Ricardo I. Valencia
-### Alejandra Garcia
+#### Ricardo I. Valencia  
+#### Alejandra Garcia
