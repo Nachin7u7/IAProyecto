@@ -1,4 +1,5 @@
 import uvicorn
+import shutil
 import time
 from fastapi.responses import FileResponse, StreamingResponse
 from datetime import datetime
@@ -8,8 +9,11 @@ from fastapi.responses import HTMLResponse
 import cv2
 import numpy as np
 import io
+import os
+from pathlib import Path
+from typing import List
 from matplotlib import pyplot as plt
-
+from starlette.responses import StreamingResponse
 app = FastAPI()
 
 # Configuración de YOLO
@@ -58,6 +62,16 @@ def detect_objects(image):
     return class_ids, confidences, boxes, human_count
 
 
+def eliminar_simbolos_timestamp(timestamp):
+    # Convertir el timestamp a un objeto datetime
+    fecha_hora = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
+
+    # Formatear la fecha y hora según tus necesidades
+    fecha_hora_formateada = fecha_hora.strftime("%Y%m%d%H%M%S")
+
+    return fecha_hora_formateada
+
+
 @app.post("/predict/")
 async def detect_objects_endpoint(file: UploadFile = File(...)):
     contents = await file.read()
@@ -77,7 +91,25 @@ async def detect_objects_endpoint(file: UploadFile = File(...)):
         x, y, w, h = box
         cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-    save_path = f"./humans_detected/detected_{timestamp}.jpg"
+    # Obtener la ruta del directorio actual del script
+    current_directory = os.path.dirname(os.path.abspath(__file__))
+
+    # Construir la ruta completa para la carpeta de destino
+    save_folder = os.path.join(current_directory, "humans_detected")
+    print("Ruta completa para la carpeta de destino:", save_folder)
+
+    # Asegurarse de que la carpeta exista antes de guardar
+    os.makedirs(save_folder, exist_ok=True)
+    print("¿La carpeta existe ahora?", os.path.exists(save_folder))
+
+    # Construir la ruta completa para guardar la imagen
+    save_path = os.path.join(
+        save_folder, f"detected_{eliminar_simbolos_timestamp(timestamp)}.jpg")
+    print("Ruta completa para guardar la imagen:", save_path)
+
+    # ...
+
+    # Guardar la imagen
     cv2.imwrite(save_path, image)
 
     # Actualizar la información del informe
@@ -85,18 +117,26 @@ async def detect_objects_endpoint(file: UploadFile = File(...)):
                    human_count, timestamp, execution_time, "YOLOv3", save_path]
     prediction_reports.append(report_info)
 
-    # Mostrar la imagen con los encuadros en la respuesta
+    # Crear respuesta JSON con información adicional
+    response_data = {
+        "timestamp": timestamp,
+        "human_count": human_count,
+        "question": "Eres tu?" if human_count > 0 else "Todo tranquilo de momento",
+        "download_link": save_path  # Agregar un enlace de descarga al JSON
+    }
+
+    # Mostrar la imagen con los encuadres en la respuesta
     _, img_encoded = cv2.imencode('.png', image)
     img_bytes = io.BytesIO(img_encoded.tobytes())
 
     # Devolver la imagen junto con la respuesta JSON usando StreamingResponse
-    return StreamingResponse(img_bytes, media_type="image/png")
+    return StreamingResponse(img_bytes, media_type="image/png", headers={"X-Info": str(response_data)})
 
 
-@app.get("/download/{file_path}")
-async def download_detected_image(file_path: str):
-    file_path = f"./humans_detected/{file_path}"
-    return FileResponse(file_path)
+# @app.get("/download/{file_path}")
+# async def download_detected_image(file_path: str):
+#     file_path = f"./humans_detected/{file_path}"
+#     return FileResponse(file_path)
 
 
 @app.get("/status")
