@@ -24,6 +24,10 @@ Descarga de yolov3.weights ---> https://github.com/patrick013/Object-Detection--
 
 y colocar el archivo en la carpeta raiz, acto seguido ejecutar el programa
 
+Para levantar el frontend -> ejecutar el siguiente comando
+python -m http.server
+posteriormente ingresar http://localhost:8000/
+
 #### Respuestas
 ##### `POST /predict/`
 - **200 OK**
