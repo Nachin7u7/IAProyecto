@@ -14,9 +14,23 @@ from pathlib import Path
 from typing import List
 from matplotlib import pyplot as plt
 from starlette.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI()
 
-# Configuración de YOLO
+origins = [
+    "http://localhost",
+    "http://localhost:8000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 net = cv2.dnn.readNet("yolov3.weights", "yolov3.cfg")
 classes = []
 with open("coco.names", "r") as f:
@@ -36,7 +50,7 @@ def detect_objects(image):
     class_ids = []
     confidences = []
     boxes = []
-    human_count = 0  # Contador de humanos detectados
+    human_count = 0
 
     for out in outs:
         for detection in out:
@@ -44,10 +58,8 @@ def detect_objects(image):
             class_id = np.argmax(scores)
             confidence = scores[class_id]
             if confidence > 0.5 and classes[class_id] == 'person':
-                # Object detected is a person
                 human_count += 1
 
-                # Rectangle coordinates
                 center_x = int(detection[0] * width)
                 center_y = int(detection[1] * height)
                 w = int(detection[2] * width)
@@ -63,10 +75,8 @@ def detect_objects(image):
 
 
 def eliminar_simbolos_timestamp(timestamp):
-    # Convertir el timestamp a un objeto datetime
     fecha_hora = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
 
-    # Formatear la fecha y hora según tus necesidades
     fecha_hora_formateada = fecha_hora.strftime("%Y%m%d%H%M%S")
 
     return fecha_hora_formateada
@@ -86,38 +96,28 @@ async def detect_objects_endpoint(file: UploadFile = File(...)):
 
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    # Guardar la imagen con los humanos encuadrados
     for box in boxes:
         x, y, w, h = box
         cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-    # Obtener la ruta del directorio actual del script
     current_directory = os.path.dirname(os.path.abspath(__file__))
 
-    # Construir la ruta completa para la carpeta de destino
     save_folder = os.path.join(current_directory, "humans_detected")
     print("Ruta completa para la carpeta de destino:", save_folder)
 
-    # Asegurarse de que la carpeta exista antes de guardar
     os.makedirs(save_folder, exist_ok=True)
     print("¿La carpeta existe ahora?", os.path.exists(save_folder))
 
-    # Construir la ruta completa para guardar la imagen
     save_path = os.path.join(
         save_folder, f"detected_{eliminar_simbolos_timestamp(timestamp)}.jpg")
     print("Ruta completa para guardar la imagen:", save_path)
 
-    # ...
-
-    # Guardar la imagen
     cv2.imwrite(save_path, image)
 
-    # Actualizar la información del informe
     report_info = [file.filename, f"{image.shape[1]}x{image.shape[0]}",
                    human_count, timestamp, execution_time, "YOLOv3", save_path]
     prediction_reports.append(report_info)
 
-    # Crear respuesta JSON con información adicional
     response_data = {
         "timestamp": timestamp,
         "human_count": human_count,
@@ -125,23 +125,13 @@ async def detect_objects_endpoint(file: UploadFile = File(...)):
         "download_link": save_path  # Agregar un enlace de descarga al JSON
     }
 
-    # Mostrar la imagen con los encuadres en la respuesta
     _, img_encoded = cv2.imencode('.png', image)
     img_bytes = io.BytesIO(img_encoded.tobytes())
 
-    # Devolver la imagen junto con la respuesta JSON usando StreamingResponse
     return StreamingResponse(img_bytes, media_type="image/png", headers={"X-Info": str(response_data)})
-
-
-# @app.get("/download/{file_path}")
-# async def download_detected_image(file_path: str):
-#     file_path = f"./humans_detected/{file_path}"
-#     return FileResponse(file_path)
-
 
 @app.get("/status")
 async def get_status():
-    # Información del servicio
     service_info = {"status": "running",
                     "message": "Service is up and running."}
 
@@ -156,24 +146,19 @@ async def get_status():
     return {"service_info": service_info, "model_info": model_info}
 
 
-# Lista para almacenar información de las predicciones para el reporte
 prediction_reports = []
 
 
 @app.get("/reports")
 async def get_reports():
-    # Crear un nombre de archivo único basado en la fecha y hora actual
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
     file_name = f"prediction_report_{timestamp}.csv"
 
-    # Crear y escribir el archivo CSV con la información de las predicciones
     with open(file_name, mode='w', newline='') as file:
         writer = csv.writer(file)
-        # Escribir encabezados
         writer.writerow(["file_name", "image_size", "prediction",
                         "timestamp", "execution_time", "model_name"])
 
-        # Escribir información de cada predicción en el archivo CSV
         for report in prediction_reports:
             writer.writerow(report)
 

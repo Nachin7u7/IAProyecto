@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>House Inspector</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="style.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Righteous&display=swap" rel="stylesheet">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed&display=swap" rel="stylesheet">
+
+</head>
+
+<body>
+
+    <header>
+        <h1>House Inspector</h1>
+    </header>
+    <hr>
+
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" name="file" accept="image/*" required>
+        <button type="button" onclick="uploadImage()">Detect Objects</button>
+    </form>
+
+    <div id="result"></div>
+    
+    <div id="info"></div>
+
+    <button type="button" onclick="downloadReport()">Descargar Reporte</button>
+
+    <button type="button" onclick="getStatus()">Obtener Estado</button>
+
+    <script>
+        function uploadImage() {
+
+        var formData = new FormData(document.getElementById('uploadForm'));
+
+        fetch('http://127.0.0.1:8000/predict/', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            var responseInfo = response.headers.get('X-Info');
+            return Promise.all([response.blob(), responseInfo]);
+        })
+        .then(data => {
+            var blob = data[0];
+            var responseInfo = JSON.parse(data[1]); 
+
+            console.log(responseInfo);
+
+            var img = document.createElement('img');
+            img.src = URL.createObjectURL(blob);
+            document.getElementById('result').innerHTML = '';
+            document.getElementById('result').appendChild(img);
+
+            var infoContainer = document.getElementById('info');
+            if (infoContainer) {
+                infoContainer.innerHTML = '';
+                for (var key in responseInfo) {
+                    var p = document.createElement('p');
+                    p.innerHTML = key + ': ' + responseInfo[key];
+                    infoContainer.appendChild(p);
+                }
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+        function downloadReport() {
+            window.location.href = 'http://127.0.0.1:8000/reports'; 
+        }
+        function getStatus() {
+            fetch('http://127.0.0.1:8000/status')
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    alert('Estado obtenido. Ver la consola para más detalles.');
+                })
+                .catch(error => console.error('Error:', error));
+        }
+    </script>
+
+</body>
+
+</html>
